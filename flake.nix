@@ -1,0 +1,73 @@
+{
+  description = "Hydration reminder CLI tool";
+
+  inputs = {
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+  };
+
+  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          overlays = [ rust-overlay.overlays.default ];
+        };
+        rustToolchain = pkgs.rust-bin.stable.latest.default;
+      in
+      {
+        packages.default = pkgs.rustPlatform.buildRustPackage {
+          pname = "mizu";
+          version = "0.1.0";
+          src = ./.;
+          cargoLock.lockFile = ./Cargo.lock;
+
+          nativeBuildInputs = with pkgs; [
+            pkg-config
+            makeWrapper
+          ];
+
+          buildInputs = with pkgs; [
+            dbus
+            libnotify
+            alsa-lib
+          ] ++ pkgs.lib.optionals stdenv.hostPlatform.isLinux [
+            openssl
+          ];
+
+          postInstall = ''
+            wrapProgram $out/bin/mizu \
+              --set ALSA_CONFIG_PATH "${pkgs.alsa-lib.out}/share/alsa"
+          '';
+
+          meta = with pkgs.lib; {
+            description = "A simple hydration reminder CLI tool";
+            homepage = "https://github.com/yourusername/mizu";
+            license = licenses.mit;
+            platforms = platforms.linux ++ platforms.darwin;
+            mainProgram = "mizu";
+          };
+        };
+
+        devShells.default = pkgs.mkShell {
+          buildInputs = with pkgs; [
+            rustToolchain
+            pkg-config
+            dbus
+            libnotify
+            alsa-lib
+            cargo-watch
+          ];
+
+          shellHook = ''
+            export ALSA_CONFIG_PATH="${pkgs.alsa-lib.out}/share/alsa"
+            export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
+          '';
+        };
+      }
+    );
+}
