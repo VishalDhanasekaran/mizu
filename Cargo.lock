@@ -864,6 +864,7 @@ name = "mizu"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "libc",
  "notify-rust",
  "rodio",
 ]

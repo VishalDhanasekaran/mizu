@@ -37,12 +37,12 @@
             libpulseaudio
           ] ++ pkgs.lib.optionals stdenv.hostPlatform.isLinux [
             openssl
-            alsa-lib
+            # alsa-lib  # needed only when building with the `sound` feature (rodio)
           ];
 
           postInstall = ''
             wrapProgram $out/bin/mizu \
-              --set LD_LIBRARY_PATH "${pkgs.lib.makeLibraryPath [ pkgs.libpulseaudio pkgs.alsa-lib ]}"
+              --set LD_LIBRARY_PATH "${pkgs.libpulseaudio.out}/lib"
           '';
 
           meta = with pkgs.lib; {

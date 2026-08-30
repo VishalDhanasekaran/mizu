@@ -6,6 +6,7 @@ pub struct Reminder<'a> {
     pub message: &'a str,
     pub timeout: u32,
     pub app_name: &'a str,
+    pub sound: bool,
 }
 
 impl<'a> Reminder<'a> {
@@ -24,7 +25,9 @@ impl<'a> Reminder<'a> {
             .icon("water")
             .show()?;
 
-        play_notification_sound()?;
+        if self.sound {
+            play_notification_sound()?;
+        }
         println!("[{}] Notification sent", chrono_now());
 
         Ok(())
