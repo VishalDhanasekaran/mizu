@@ -25,6 +25,7 @@
           version = "0.1.0";
           src = ./.;
           cargoLock.lockFile = ./Cargo.lock;
+          cargoBuildFlags = [ "--features" "sound" ];
 
           nativeBuildInputs = with pkgs; [
             pkg-config

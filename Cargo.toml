@@ -8,11 +8,10 @@ description = "A simple hydration reminder CLI tool"
 clap = { version = "4.4", features = ["derive"] }
 notify-rust = "4.10"
 libc = "0.2"
-rodio = { version = "0.17", optional = true }
 
 [features]
-default = []
-sound = ["dep:rodio"]
+default = ["sound"]
+sound = []
 
 [profile.release]
 opt-level = 3
