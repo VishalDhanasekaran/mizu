@@ -34,14 +34,14 @@
           buildInputs = with pkgs; [
             dbus
             libnotify
-            alsa-lib
+            libpulseaudio
           ] ++ pkgs.lib.optionals stdenv.hostPlatform.isLinux [
             openssl
           ];
 
           postInstall = ''
             wrapProgram $out/bin/mizu \
-              --set ALSA_CONFIG_PATH "${pkgs.alsa-lib.out}/share/alsa"
+              --set LD_LIBRARY_PATH "${pkgs.libpulseaudio.out}/lib"
           '';
 
           meta = with pkgs.lib; {
@@ -59,12 +59,12 @@
             pkg-config
             dbus
             libnotify
-            alsa-lib
+            libpulseaduio
             cargo-watch
           ];
 
           shellHook = ''
-            export ALSA_CONFIG_PATH="${pkgs.alsa-lib.out}/share/alsa"
+            export LD_LIBRARY_PATH="${pkgs.libpulseaudio.out}/lib:$LD_LIBRARY_PATH"
             export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           '';
         };
