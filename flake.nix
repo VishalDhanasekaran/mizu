@@ -37,11 +37,12 @@
             libpulseaudio
           ] ++ pkgs.lib.optionals stdenv.hostPlatform.isLinux [
             openssl
+            alsa-lib
           ];
 
           postInstall = ''
             wrapProgram $out/bin/mizu \
-              --set LD_LIBRARY_PATH "${pkgs.libpulseaudio.out}/lib"
+              --set LD_LIBRARY_PATH "${pkgs.lib.makeLibraryPath [ pkgs.libpulseaudio pkgs.alsa-lib ]}"
           '';
 
           meta = with pkgs.lib; {
@@ -59,7 +60,8 @@
             pkg-config
             dbus
             libnotify
-            libpulseaduio
+            libpulseaudio
+            alsa-lib
             cargo-watch
           ];
 
