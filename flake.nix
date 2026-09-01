@@ -48,7 +48,7 @@
 
           meta = with pkgs.lib; {
             description = "A simple hydration reminder CLI tool";
-            homepage = "https://github.com/yourusername/mizu";
+            homepage = "https://github.com/VishalDhanasekaran/mizu";
             license = licenses.mit;
             platforms = platforms.linux ++ platforms.darwin;
             mainProgram = "mizu";
