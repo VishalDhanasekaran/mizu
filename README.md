@@ -8,15 +8,15 @@ mizu runs quietly in the background and fires desktop notifications on a schedul
 
 - **Background daemon** — starts detached in the background and prints its PID, so your terminal is free immediately.
 - **Desktop notifications** — powered by `notify-rust` (DBus), integrates with your system's notification daemon.
-- **Optional sound** — plays a notification sound via your system audio player (`pw-play`, `paplay`, `canberra-gtk-play`, or `aplay`).
+- **Optional sound** — plays a notification sound via your system audio player (`pw-play`, `paplay`, `canberra-gtk-play`, or `aplay` on Linux; the built-in `afplay` on macOS).
 - **Persistent config** — remembers your sound preference between runs (`~/.config/mizu/config`).
 
 ## Requirements
 
 - **Linux** or **macOS**
 - Either **Nix** (with flakes) or the **Rust toolchain** to install
-- A **desktop notification daemon** (e.g. `dunst`, `mako`, `xfce4-notifyd`, `swaync`)
-- For sound: one of `pw-play`, `paplay`, `canberra-gtk-play`, or `aplay`, plus a sound file at `/usr/share/sounds/freedesktop/stereo/bell.oga`
+- **Linux:** a desktop notification daemon (e.g. `dunst`, `mako`, `xfce4-notifyd`, `swaync`), and for sound one of `pw-play`, `paplay`, `canberra-gtk-play`, or `aplay` plus a sound file at `/usr/share/sounds/freedesktop/stereo/bell.oga`
+- **macOS:** nothing extra — notifications use Notification Center and sound uses `afplay` with `/System/Library/Sounds/Glass.aiff`. `--timeout` and the notification icon are ignored on macOS.
 
 ## Installation
 
@@ -108,14 +108,14 @@ kill <PID>
 ## How it works
 
 1. mizu parses your options and (optionally) prompts for sound.
-2. It **daemonizes** — detaches from the terminal, redirects stdio to `/dev/null`, and reports its PID.
+2. It **daemonizes** — re-launches itself in a new session detached from the terminal, with stdio redirected to `/dev/null`, and reports its PID.
 3. In the background, the scheduler sleeps for the interval, then sends a notification (and plays the sound, if enabled).
 4. Settings are persisted to `~/.config/mizu/config` so they survive restarts.
 
 ## Troubleshooting
 
-- **No notifications appear** — make sure a desktop notification daemon is running (e.g. `dunst`, `mako`).
-- **No sound** — ensure an audio player from the list is installed and `/usr/share/sounds/freedesktop/stereo/bell.oga` exists. mizu skips silently if neither is available.
+- **No notifications appear** — on Linux, make sure a desktop notification daemon is running (e.g. `dunst`, `mako`). On macOS, check that notifications are allowed in System Settings → Notifications.
+- **No sound** — on Linux, ensure an audio player from the list is installed and `/usr/share/sounds/freedesktop/stereo/bell.oga` exists. If sound fails, mizu keeps sending notifications without it.
 - **Old behavior after updating** — the flake may be cached; run with `--refresh`.
 
 ## License

@@ -32,16 +32,14 @@
             makeWrapper
           ];
 
-          buildInputs = with pkgs; [
+          buildInputs = pkgs.lib.optionals pkgs.stdenv.hostPlatform.isLinux (with pkgs; [
             dbus
             libnotify
             libpulseaudio
-          ] ++ pkgs.lib.optionals stdenv.hostPlatform.isLinux [
             openssl
-            # alsa-lib  # needed only when building with the `sound` feature (rodio)
-          ];
+          ]);
 
-          postInstall = ''
+          postInstall = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
             wrapProgram $out/bin/mizu \
               --set LD_LIBRARY_PATH "${pkgs.libpulseaudio.out}/lib"
           '';
@@ -59,14 +57,15 @@
           buildInputs = with pkgs; [
             rustToolchain
             pkg-config
+            cargo-watch
+          ] ++ pkgs.lib.optionals stdenv.hostPlatform.isLinux [
             dbus
             libnotify
             libpulseaudio
             alsa-lib
-            cargo-watch
           ];
 
-          shellHook = ''
+          shellHook = pkgs.lib.optionalString pkgs.stdenv.hostPlatform.isLinux ''
             export LD_LIBRARY_PATH="${pkgs.libpulseaudio.out}/lib:$LD_LIBRARY_PATH"
             export DBUS_SESSION_BUS_ADDRESS="unix:path=$XDG_RUNTIME_DIR/bus"
           '';

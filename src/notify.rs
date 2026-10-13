@@ -26,7 +26,9 @@ impl<'a> Reminder<'a> {
             .show()?;
 
         if self.sound {
-            play_notification_sound()?;
+            if let Err(e) = play_notification_sound() {
+                eprintln!("warning: could not play sound: {e}");
+            }
         }
         println!("[{}] Notification sent", chrono_now());
 

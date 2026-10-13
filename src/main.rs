@@ -4,8 +4,8 @@ mod scheduler;
 mod sound;
 
 use clap::Parser;
-use std::os::fd::AsRawFd;
-use std::process;
+use std::os::unix::process::CommandExt;
+use std::process::{Command, Stdio};
 
 use notify::Reminder;
 use scheduler::run;
@@ -28,17 +28,21 @@ struct Args {
 
     #[arg(short, long, default_value = "Hydrate")]
     app_name: String,
+
+    /// Internal: run as the detached reminder process
+    #[arg(long, hide = true)]
+    background: bool,
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    if std::env::args().any(|a| a == DAEMON_FLAG) {
-        return run_daemon();
+    let args = Args::parse();
+    if args.background {
+        return run_daemon(args);
     }
-    setup_runner()
+    setup_runner(args)
 }
 
-fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
+fn run_daemon(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let cfg = config::load();
     let reminder = Reminder {
         message: &args.message,
@@ -49,29 +53,16 @@ fn run_daemon() -> Result<(), Box<dyn std::error::Error>> {
     run(args.interval, &reminder)
 }
 
-fn setup_runner() -> Result<(), Box<dyn std::error::Error>> {
-    let args = Args::parse();
-
+fn setup_runner(args: Args) -> Result<(), Box<dyn std::error::Error>> {
     let sound = prompt_sound(config::load().sound);
-
-    let pid = daemonize();
-    if pid > 0 {
-        println!("💧 Hydration reminder running in background");
-        println!("   PID: {}", pid);
-        println!("   Interval: {} minutes", args.interval);
-        println!("   Sound: {}", if sound { "enabled" } else { "disabled" });
-        return Ok(());
-    }
-
     config::save(sound);
 
-    let reminder = Reminder {
-        message: &args.message,
-        timeout: args.timeout,
-        app_name: &args.app_name,
-        sound,
-    };
-    run(args.interval, &reminder)
+    let pid = daemonize()?;
+    println!("💧 Hydration reminder running in background");
+    println!("   PID: {}", pid);
+    println!("   Interval: {} minutes", args.interval);
+    println!("   Sound: {}", if sound { "enabled" } else { "disabled" });
+    Ok(())
 }
 
 #[cfg(not(feature = "sound"))]
@@ -101,30 +92,21 @@ fn prompt_sound(current: bool) -> bool {
     }
 }
 
-fn daemonize() -> u32 {
-    let pid = unsafe { libc::fork() };
-    if pid > 0 {
-        return pid as u32;
-    }
-
-    if pid < 0 {
-        eprintln!("error: could not fork");
-        process::exit(1);
-    }
-
+/// Re-launch this binary detached from the terminal. A fresh exec (rather
+/// than a bare fork) is required on macOS, where system frameworks used for
+/// notifications are not fork-safe.
+fn daemonize() -> std::io::Result<u32> {
+    let mut cmd = Command::new(std::env::current_exe()?);
+    cmd.args(std::env::args_os().skip(1))
+        .arg(DAEMON_FLAG)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null());
     unsafe {
-        libc::setsid();
+        cmd.pre_exec(|| {
+            libc::setsid();
+            Ok(())
+        });
     }
-    redirect_to_devnull(libc::STDIN_FILENO);
-    redirect_to_devnull(libc::STDOUT_FILENO);
-    redirect_to_devnull(libc::STDERR_FILENO);
-
-    0
-}
-
-fn redirect_to_devnull(fd: i32) {
-    let null = std::fs::File::open("/dev/null").expect("open /dev/null");
-    unsafe {
-        libc::dup2(null.as_raw_fd(), fd);
-    }
+    Ok(cmd.spawn()?.id())
 }
